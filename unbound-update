@@ -1,0 +1,70 @@
+#!/bin/sh
+set -e      # Abort upon error
+set -u      # Abort upon udefined variable
+set -x     # Print every command
+#set -o pipefail # Prevents errors in a pipeline from being masked (not supported by dash yet)
+
+readonly path="$(dirname -- "$(readlink -f -- "$0")")"
+
+#######################################
+#   Description:
+#       Create/Update unbound local data conf file
+#   Usage:
+#       ./unbound-update
+#   Arguments:
+#        None!
+#   Returns:
+#       0 upon success
+#       >=1 upon error
+#######################################
+main() {
+    # Check if $USAGE is respected
+    readonly USAGE='Usage: ./unbound-update'
+    [ "$#" -ne 0 ] && err "Error: 0 argument(s) expected, $# received" && err "$USAGE" && return 1
+
+    detect_assu
+
+    find "$path" -name '*.env' | while read f; do
+        set -a; . "$f"; set +a
+
+        ip="$(dig +short @1.1.1.1 "$UNBOUND_DOMAIN")"
+        conf_update
+        service_reload
+    done
+}
+
+# Detect if using sudo or doas
+detect_assu() {
+    command -v sudo && readonly assu='sudo' && return
+    command -v doas && readonly assu='doas' && return
+
+    err "Error: could not detect sudo or doas command"
+    return 2
+}
+
+# Update local-data conf file
+conf_update() {
+    printf 'local-data: "%s. IN %s %s"\nlocal-data-ptr: "%s %s"\n' \
+        "$UNBOUND_DOMAIN" "$UNBOUND_RECORD_TYPE" "$ip" "$ip" "$UNBOUND_DOMAIN" \
+        | $assu tee "/var/unbound/etc/$UNBOUND_RECORD_TYPE.$UNBOUND_DOMAIN.conf" >/dev/null
+}
+
+# Reload unbound conf
+service_reload() {
+    if is_openbsd; then $assu rcctl reload unbound;
+    elif is_linux; then $assu systemctl reload unbound;
+    fi
+}
+
+# Support Linux and OpenBSD
+is_openbsd() { uname | grep -q 'OpenBSD'; }
+is_linux() { uname | grep -q 'Linux'; }
+
+#######################################
+#   Print error message to stderr
+#   https://google.github.io/styleguide/shellguide.html
+#######################################
+err() { echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: $*" >&2; }
+
+main "$@"; exit
+

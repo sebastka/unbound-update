@@ -29,8 +29,9 @@ main() {
 
         ip="$(dig +short @1.1.1.1 "$UNBOUND_DOMAIN")"
         conf_update
-        service_reload
     done
+
+    service_reload
 }
 
 # Detect if using sudo or doas

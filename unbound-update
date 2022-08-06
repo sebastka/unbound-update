@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e      # Abort upon error
 set -u      # Abort upon udefined variable
-set -x     # Print every command
+#set -x     # Print every command
 #set -o pipefail # Prevents errors in a pipeline from being masked (not supported by dash yet)
 
 readonly path="$(dirname -- "$(readlink -f -- "$0")")"

@@ -2,7 +2,7 @@
 
 Creates and updates unbound local-data conf file, to be included from `unbound.conf`.
 
-Set up .env files for every file to create:
+Set up `.env` files for every conf file to create:
 ```
 $ cp env.example home.domain.tld.env
 $ vi home.domain.tld.env

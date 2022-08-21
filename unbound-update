@@ -27,7 +27,7 @@ main() {
     find "$path" -name '*.env' | while read f; do
         set -a; . "$f"; set +a
 
-        ip="$(dig +short @1.1.1.1 "$UNBOUND_DOMAIN")"
+        ip="$(dig +short @$UNBOUND_NS_QUERY "$UNBOUND_DOMAIN")"
         conf_update
     done
 
